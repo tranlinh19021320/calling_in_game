@@ -1,6 +1,10 @@
 import 'package:calling_in_game/screens/signup_screen.dart';
+import 'package:calling_in_game/server/firebase_auth.dart';
 import 'package:calling_in_game/utils/utils.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,171 +14,261 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool is_loading = false;
+  bool _isloading = false;
   final TextEditingController _accountTextController = TextEditingController();
   final TextEditingController _passwordTextController = TextEditingController();
 
-  int is_state_account = IS_DEFAULT_ACCOUNT;
-  int is_state_password = IS_DEFAULT_ACCOUNT;
+  late FocusNode _accountFocusNode;
+  final FocusNode _passwordFocusNode = FocusNode();
+
+  int _isStateAccount = IS_DEFAULT_ACCOUNT;
+  int _isStatePassword = IS_DEFAULT_ACCOUNT;
+
+  @override
+  void initState() {
+    super.initState();
+    _accountFocusNode = FocusNode();
+    _accountFocusNode.addListener(() {
+      if (!_accountFocusNode.hasFocus && _accountTextController.text != '') {
+        checkAlreadyAccount();
+      }
+    });
+  }
 
   @override
   void dispose() {
     super.dispose();
     _accountTextController.dispose();
     _passwordTextController.dispose();
+
+    _accountFocusNode.dispose();
+    _passwordFocusNode.dispose();
+  }
+
+  void logIn() async {
+    setState(() {
+      _isloading = true;
+      _passwordFocusNode.unfocus();
+    });
+    
+    String res = "";
+    String email = _accountTextController.text;
+    if (!isValidEmail(_accountTextController.text)) {
+      var snapUser = await FirebaseFirestore.instance.collection('users').where('username', isEqualTo: _accountTextController.text).get();
+      email = snapUser.docs.first.data()['email'];
+    }
+      res = await Auth().login(
+          email: email,
+          password: _passwordTextController.text);
+      
+      setState(() {
+        _isloading = false;
+      });
+
+      if (res != "success") {
+      setState(() {
+        _isStatePassword = IS_ERROR_ACCOUNT;
+        
+      });
+    } else {
+      setState(() {
+        _isStatePassword = IS_DEFAULT_ACCOUNT;
+      });
+      showSnackBar(context, "Đăng nhập thành công!", false);
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomeScreen()));
+    }
+  }
+
+  void checkAlreadyAccount() async {
+    try {
+      QuerySnapshot<Map<String, dynamic>> snapUser;
+      // check account login is email or account
+      if (isValidEmail(_accountTextController.text)) {
+        snapUser = await FirebaseFirestore.instance
+            .collection('users')
+            .where('email', isEqualTo: _accountTextController.text)
+            .get();
+      } else {
+        snapUser = await FirebaseFirestore.instance
+            .collection('users')
+            .where('username', isEqualTo: _accountTextController.text)
+            .get();
+      }
+
+      if (snapUser.docs.isNotEmpty) {
+        setState(() {
+          _isStateAccount = IS_CORRECT_ACCOUNT;
+        });
+      } else {
+        setState(() {
+          _isStateAccount = IS_ERROR_ACCOUNT;
+        });
+      }
+    } catch (e) {
+      showSnackBar(context, e.toString(), true);
+    }
   }
 
   void navigateToSignup() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (context) => const SignupScreen()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => const SignupScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Flexible(
-              flex: 1,
-              child: Container(),
-            ),
-            const Text(
-              'Voice Chat',
-              style: TextStyle(
-                fontFamily: 'MoonTime',
-                fontWeight: FontWeight.bold,
-                fontSize: 60,
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Flexible(
+                flex: 1,
+                child: Container(),
               ),
-            ),
-            const SizedBox(
-              height: 64,
-            ),
-            //Text field for account
-            TextFormField(
-              controller: _accountTextController,
-              decoration: InputDecoration(
-                labelText: 'Tài khoản hoặc email',
-                enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                  color: greyColor,
-                )),
-                focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                  color: (is_state_account == IS_DEFAULT_ACCOUNT)
-                      ? blueColor
-                      : (is_state_account == IS_CORRECT_ACCOUNT)
-                          ? greenColor
-                          : redColor,
-                )),
+              const Text(
+                'Voice Chat',
+                style: TextStyle(
+                  fontFamily: 'MoonTime',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 60,
+                ),
               ),
-              keyboardType: TextInputType.text,
-              onEditingComplete: () {},
-            ),
+              const SizedBox(
+                height: 64,
+              ),
+              //Text field for account
+              TextFormField(
+                focusNode: _accountFocusNode,
+                controller: _accountTextController,
+                decoration: InputDecoration(
+                  labelText: 'Tài khoản hoặc email',
+                  enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                    color: (_isStateAccount == IS_DEFAULT_ACCOUNT)
+                        ? greyColor
+                        : (_isStateAccount == IS_CORRECT_ACCOUNT)
+                            ? greenColor
+                            : redColor,
+                  )),
+                  focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(
+                    color: blueColor,
+                  )),
+                ),
+                keyboardType: TextInputType.text,
+                onEditingComplete: () {
+                  FocusScope.of(context).requestFocus(_passwordFocusNode);
+                },
+              ),
 
-            //notificate account
-            (is_state_account == IS_DEFAULT_ACCOUNT)
-                ? const Text(' ')
-                : (is_state_account == IS_CORRECT_ACCOUNT)
-                    ? const Text(
-                        'tài khoản có tồn tại!',
-                        style: TextStyle(color: greenColor),
-                      )
-                    : const Text(
-                        'Không tìm thấy tài khoản!',
-                        style: TextStyle(color: redColor),
+              //notificate account
+              (_isStateAccount == IS_DEFAULT_ACCOUNT)
+                  ? const Text(' ')
+                  : (_isStateAccount == IS_CORRECT_ACCOUNT)
+                      ? const Text(
+                          'Tài khoản có tồn tại!',
+                          style: TextStyle(color: greenColor),
+                        )
+                      : const Text(
+                          'Không tìm thấy tài khoản!',
+                          style: TextStyle(color: redColor),
+                        ),
+
+              const SizedBox(
+                height: 24,
+              ),
+
+              //Text field for password
+              TextFormField(
+                focusNode: _passwordFocusNode,
+                controller: _passwordTextController,
+                decoration: InputDecoration(
+                  labelText: 'Mật khẩu',
+                  enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                    color: (_isStatePassword == IS_DEFAULT_ACCOUNT)
+                        ? greyColor
+                        : redColor,
+                  )),
+                  focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(
+                    color: blueColor,
+                  )),
+                ),
+                obscureText: true,
+                keyboardType: TextInputType.text,
+                onEditingComplete: logIn,
+              ),
+              //notificate account
+              (_isStatePassword == IS_DEFAULT_ACCOUNT)
+                  ? const Text(' ')
+                  : const Text(
+                      'Mật khẩu không chính xác!',
+                      style: TextStyle(color: redColor),
+                    ),
+
+              const SizedBox(
+                height: 24,
+              ),
+              InkWell(
+                onTap: logIn,
+                child: Container(
+                  width: double.infinity,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: const ShapeDecoration(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(8),
                       ),
-
-            const SizedBox(
-              height: 24,
-            ),
-
-            //Text field for password
-            TextFormField(
-              controller: _passwordTextController,
-              decoration: InputDecoration(
-                labelText: 'Mật khẩu',
-                enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                  color: greyColor,
-                )),
-                focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                  color: (is_state_password == IS_DEFAULT_ACCOUNT)
-                      ? blueColor
-                      : redColor,
-                )),
-              ),
-              obscureText: true,
-              keyboardType: TextInputType.text,
-              onEditingComplete: () {
-                setState(() {
-                  is_loading = true;
-                });
-              },
-            ),
-            //notificate account
-            (is_state_password == IS_DEFAULT_ACCOUNT)
-                ? const Text(' ')
-                : const Text(
-                    'Mật khẩu không chính xác!',
-                    style: TextStyle(color: redColor),
+                    ),
+                    color: blueColor,
                   ),
+                  child: _isloading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: whiteColor,
+                          ),
+                        )
+                      : const Text(
+                          'Đăng nhập',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w700),
+                        ),
+                ),
+              ),
+              Flexible(
+                flex: 1,
+                child: Container(),
+              ),
 
-            const SizedBox(
-              height: 24,
-            ),
-            InkWell(
-              onTap: navigateToSignup,
-              child: Container(
-                width: double.infinity,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: const ShapeDecoration(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(
-                      Radius.circular(8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: const Text('Không có tài khoản?'),
+                  ),
+                  GestureDetector(
+                    onTap: navigateToSignup,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: const Text(
+                        'Đăng ký.',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
-                  color: blueColor,
-                ),
-                child: is_loading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: whiteColor,
-                        ),
-                      )
-                    : const Text(
-                        'Đăng nhập',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                      ),
+                ],
               ),
-            ),
-            Flexible(
-              flex: 1,
-              child: Container(),
-            ),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: const Text('Không có tài khoản?'),
-                ),
-
-                GestureDetector(
-                  onTap: navigateToSignup,
-
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: const Text('Đăng ký.', style: TextStyle(fontWeight: FontWeight.bold),),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12,)
-          ],
+              const SizedBox(
+                height: 12,
+              )
+            ],
+          ),
         ),
       ),
     );
