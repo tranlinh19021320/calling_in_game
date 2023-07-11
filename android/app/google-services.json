@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "536295333141",
+    "project_id": "calling-in-game",
+    "storage_bucket": "calling-in-game.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:536295333141:android:4ff8ff1f956e421b1cdd1c",
+        "android_client_info": {
+          "package_name": "com.example.calling_in_game"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "536295333141-usmv71rq0t7sjei39ia99u5u2sr0tcdi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBljHSTCuSgRt59tWU54AZmFs2gZQLFlHc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "536295333141-usmv71rq0t7sjei39ia99u5u2sr0tcdi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
