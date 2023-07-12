@@ -4,6 +4,7 @@ import 'package:calling_in_game/utils/utils.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../responsives/responsive.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -21,8 +22,8 @@ class _LoginScreenState extends State<LoginScreen> {
   late FocusNode _accountFocusNode;
   final FocusNode _passwordFocusNode = FocusNode();
 
-  int _isStateAccount = IS_DEFAULT_ACCOUNT;
-  int _isStatePassword = IS_DEFAULT_ACCOUNT;
+  int _isStateAccount = IS_DEFAULT;
+  int _isStatePassword = IS_DEFAULT;
 
   @override
   void initState() {
@@ -50,33 +51,34 @@ class _LoginScreenState extends State<LoginScreen> {
       _isloading = true;
       _passwordFocusNode.unfocus();
     });
-    
+
     String res = "";
     String email = _accountTextController.text;
     if (!isValidEmail(_accountTextController.text)) {
-      var snapUser = await FirebaseFirestore.instance.collection('users').where('username', isEqualTo: _accountTextController.text).get();
+      var snapUser = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username', isEqualTo: _accountTextController.text)
+          .get();
       email = snapUser.docs.first.data()['email'];
     }
-      res = await Auth().login(
-          email: email,
-          password: _passwordTextController.text);
-      
-      setState(() {
-        _isloading = false;
-      });
+    res = await Auth()
+        .login(email: email, password: _passwordTextController.text);
 
-      if (res != "success") {
+    setState(() {
+      _isloading = false;
+    });
+
+    if (res != "success") {
       setState(() {
-        _isStatePassword = IS_ERROR_ACCOUNT;
-        
+        _isStatePassword = IS_ERROR;
       });
     } else {
       setState(() {
-        _isStatePassword = IS_DEFAULT_ACCOUNT;
+        _isStatePassword = IS_DEFAULT;
       });
       showSnackBar(context, "Đăng nhập thành công!", false);
       Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()));
+          MaterialPageRoute(builder: (context) => const ResponsiveScreen()));
     }
   }
 
@@ -98,11 +100,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (snapUser.docs.isNotEmpty) {
         setState(() {
-          _isStateAccount = IS_CORRECT_ACCOUNT;
+          _isStateAccount = IS_CORRECT;
         });
       } else {
         setState(() {
-          _isStateAccount = IS_ERROR_ACCOUNT;
+          _isStateAccount = IS_ERROR;
         });
       }
     } catch (e) {
@@ -111,8 +113,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void navigateToSignup() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => const SignupScreen()));
+    Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const SignupScreen()));
   }
 
   @override
@@ -147,9 +149,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   labelText: 'Tài khoản hoặc email',
                   enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(
-                    color: (_isStateAccount == IS_DEFAULT_ACCOUNT)
+                    color: (_isStateAccount == IS_DEFAULT)
                         ? greyColor
-                        : (_isStateAccount == IS_CORRECT_ACCOUNT)
+                        : (_isStateAccount == IS_CORRECT)
                             ? greenColor
                             : redColor,
                   )),
@@ -158,6 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: blueColor,
                   )),
                 ),
+                autofocus: true,
                 keyboardType: TextInputType.text,
                 onEditingComplete: () {
                   FocusScope.of(context).requestFocus(_passwordFocusNode);
@@ -165,9 +168,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
 
               //notificate account
-              (_isStateAccount == IS_DEFAULT_ACCOUNT)
+              (_isStateAccount == IS_DEFAULT)
                   ? const Text(' ')
-                  : (_isStateAccount == IS_CORRECT_ACCOUNT)
+                  : (_isStateAccount == IS_CORRECT)
                       ? const Text(
                           'Tài khoản có tồn tại!',
                           style: TextStyle(color: greenColor),
@@ -189,9 +192,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   labelText: 'Mật khẩu',
                   enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(
-                    color: (_isStatePassword == IS_DEFAULT_ACCOUNT)
-                        ? greyColor
-                        : redColor,
+                    color:
+                        (_isStatePassword == IS_DEFAULT) ? greyColor : redColor,
                   )),
                   focusedBorder: const OutlineInputBorder(
                       borderSide: BorderSide(
@@ -203,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 onEditingComplete: logIn,
               ),
               //notificate account
-              (_isStatePassword == IS_DEFAULT_ACCOUNT)
+              (_isStatePassword == IS_DEFAULT)
                   ? const Text(' ')
                   : const Text(
                       'Mật khẩu không chính xác!',

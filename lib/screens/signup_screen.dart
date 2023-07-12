@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:calling_in_game/responsives/responsive.dart';
 import 'package:calling_in_game/screens/home_screen.dart';
 import 'package:calling_in_game/screens/login_screen.dart';
 import 'package:calling_in_game/server/firebase_auth.dart';
@@ -25,8 +26,8 @@ class _SignupScreenState extends State<SignupScreen> {
   late FocusNode _accountFocusNode;
   final FocusNode _passwordFocusNode = FocusNode();
 
-  int _isStateAccount = IS_DEFAULT_ACCOUNT;
-  int _isStateEmail = IS_DEFAULT_ACCOUNT;
+  int _isStateAccount = IS_DEFAULT;
+  int _isStateEmail = IS_DEFAULT;
   @override
   void initState() {
     super.initState();
@@ -67,7 +68,7 @@ class _SignupScreenState extends State<SignupScreen> {
         email: _emailTextController.text,
         username: _accountTextController.text,
         password: _passwordTextController.text,
-        avatarIndex: Random().nextInt(10) + 1);
+        avatarIndex: Random().nextInt(avatarPath.length));
 
     setState(() {
       _isloading = false;
@@ -77,8 +78,9 @@ class _SignupScreenState extends State<SignupScreen> {
       showSnackBar(context, res, true);
     } else {
       showSnackBar(context, "Đăng ký thành công!", false);
+
       Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()));
+          MaterialPageRoute(builder: (context) => const ResponsiveScreen()));
     }
   }
 
@@ -86,7 +88,7 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       if (_accountTextController.text == '') {
         setState(() {
-          _isStateAccount = IS_DEFAULT_ACCOUNT;
+          _isStateAccount = IS_DEFAULT;
         });
       } else {
         var snapUser = await FirebaseFirestore.instance
@@ -96,11 +98,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
         if (snapUser.docs.isNotEmpty) {
           setState(() {
-            _isStateAccount = IS_ERROR_ACCOUNT;
+            _isStateAccount = IS_ERROR;
           });
         } else {
           setState(() {
-            _isStateAccount = IS_CORRECT_ACCOUNT;
+            _isStateAccount = IS_CORRECT;
           });
         }
       }
@@ -113,13 +115,13 @@ class _SignupScreenState extends State<SignupScreen> {
     try {
       if (_emailTextController.text == '') {
         setState(() {
-          _isStateEmail = IS_DEFAULT_ACCOUNT;
+          _isStateEmail = IS_DEFAULT;
         });
       } else {
         if (!isValidEmail(_emailTextController.text)) {
           showSnackBar(context, "Email sai định dạng!", true);
           setState(() {
-            _isStateEmail = IS_ERROR_ACCOUNT;
+            _isStateEmail = IS_ERROR;
           });
         } else {
           var snapUser = await FirebaseFirestore.instance
@@ -129,11 +131,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
           if (snapUser.docs.isNotEmpty) {
             setState(() {
-              _isStateEmail = IS_ERROR_ACCOUNT;
+              _isStateEmail = IS_ERROR;
             });
           } else {
             setState(() {
-              _isStateEmail = IS_CORRECT_ACCOUNT;
+              _isStateEmail = IS_CORRECT;
             });
           }
         }
@@ -144,15 +146,14 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void navigateToSignup() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => const LoginScreen()));
+    Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const LoginScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
-        
         padding: const EdgeInsets.all(8),
         child: SafeArea(
           child: Column(
@@ -181,9 +182,9 @@ class _SignupScreenState extends State<SignupScreen> {
                   labelText: 'Email',
                   enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(
-                    color: (_isStateEmail == IS_DEFAULT_ACCOUNT)
+                    color: (_isStateEmail == IS_DEFAULT)
                         ? greyColor
-                        : (_isStateEmail == IS_CORRECT_ACCOUNT)
+                        : (_isStateEmail == IS_CORRECT)
                             ? greenColor
                             : redColor,
                   )),
@@ -198,10 +199,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   FocusScope.of(context).requestFocus(_accountFocusNode);
                 },
               ),
-      
-              (_isStateEmail == IS_DEFAULT_ACCOUNT)
+
+              (_isStateEmail == IS_DEFAULT)
                   ? const Text(' ')
-                  : (_isStateEmail == IS_CORRECT_ACCOUNT)
+                  : (_isStateEmail == IS_CORRECT)
                       ? const Text(
                           'Email chưa đăng ký!',
                           style: TextStyle(color: greenColor),
@@ -210,11 +211,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           'Email sai hoặc đã đăng ký!',
                           style: TextStyle(color: redColor),
                         ),
-      
+
               const SizedBox(
                 height: 24,
               ),
-      
+
               //Text field for account
               TextFormField(
                 focusNode: _accountFocusNode,
@@ -223,9 +224,9 @@ class _SignupScreenState extends State<SignupScreen> {
                   labelText: 'Tên tài khoản',
                   enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(
-                    color: (_isStateAccount == IS_DEFAULT_ACCOUNT)
+                    color: (_isStateAccount == IS_DEFAULT)
                         ? greyColor
-                        : (_isStateAccount == IS_CORRECT_ACCOUNT)
+                        : (_isStateAccount == IS_CORRECT)
                             ? greenColor
                             : redColor,
                   )),
@@ -240,11 +241,11 @@ class _SignupScreenState extends State<SignupScreen> {
                   FocusScope.of(context).requestFocus(_passwordFocusNode);
                 },
               ),
-      
+
               //notificate account
-              (_isStateAccount == IS_DEFAULT_ACCOUNT)
+              (_isStateAccount == IS_DEFAULT)
                   ? const Text(' ')
-                  : (_isStateAccount == IS_CORRECT_ACCOUNT)
+                  : (_isStateAccount == IS_CORRECT)
                       ? const Text(
                           'Tài khoản chưa đăng ký!',
                           style: TextStyle(color: greenColor),
@@ -253,11 +254,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           'Tài khoản đã tồn tại!',
                           style: TextStyle(color: redColor),
                         ),
-      
+
               const SizedBox(
                 height: 24,
               ),
-      
+
               //Text field for password
               TextFormField(
                 focusNode: _passwordFocusNode,
@@ -276,7 +277,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               //notificate account
               const Text(''),
-      
+
               const SizedBox(
                 height: 24,
               ),
@@ -312,7 +313,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 flex: 1,
                 child: Container(),
               ),
-      
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

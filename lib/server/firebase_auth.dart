@@ -1,10 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:calling_in_game/model/user.dart' as model;
+import 'package:flutter/material.dart';
 
 class Auth {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  
+  Future<model.User> getUserDetails() async {
+    User currentUser = _auth.currentUser!;
+
+    DocumentSnapshot snap =
+        await _firestore.collection('users').doc(currentUser.uid).get();
+
+    return model.User.fromSnap(snap);
+  }
 
   Future<String> signUp(
       {required String email,
@@ -19,10 +29,12 @@ class Auth {
         UserCredential cred = await _auth.createUserWithEmailAndPassword(
             email: email, password: password);
         model.User user = model.User(
-            email: email,
-            uid: cred.user!.uid,
-            username: username,
-            avatarIndex: avatarIndex);
+          email: email,
+          uid: cred.user!.uid,
+          username: username,
+          avatarIndex: avatarIndex,
+          rooms: [],
+        );
         await _firestore.collection('users').doc(cred.user!.uid).set(
               user.toJson(),
             );
@@ -42,24 +54,25 @@ class Auth {
     return res;
   }
 
-  Future<String> login({required String email, required String password}) async {
+  Future<String> login(
+      {required String email, required String password}) async {
     String res = 'Có lỗi xảy ra!';
 
     try {
       if (email.isNotEmpty || password.isNotEmpty) {
-        await _auth.signInWithEmailAndPassword(email: email, password: password);
+        await _auth.signInWithEmailAndPassword(
+            email: email, password: password);
 
         res = "success";
       }
-
-    } catch(e) {
+    } catch (e) {
       res = e.toString();
     }
     return res;
   }
 
-
   Future<void> logOut() async {
     await _auth.signOut();
   }
 }
+
